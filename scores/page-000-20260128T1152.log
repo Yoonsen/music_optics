@@ -1,0 +1,74 @@
+2026-01-28 11:52:31,921 INFO [page-000]                 Book.java:560  | 1 sheet in /Users/larsj/Github/music_optics/pages/page-000.png
+2026-01-28 11:52:31,972 INFO []                 Book.java:2577 | Stored /book.xml
+2026-01-28 11:52:31,972 INFO []                 Book.java:2537 | Book stored as scores/page-000.omr
+2026-01-28 11:52:31,974 INFO []                 Book.java:1929 | Book reaching PAGE on sheets:[#1]
+2026-01-28 11:52:31,974 INFO [page-000]       StepMonitoring.java:98   | LOAD
+2026-01-28 11:52:32,162 INFO [page-000]            SheetStub.java:1273 | Loaded image #1 2639x3574 from /Users/larsj/Github/music_optics/pages/page-000.png
+2026-01-28 11:52:32,163 INFO [page-000]            ImageUtil.java:206  | Discarding alpha band ...
+2026-01-28 11:52:32,281 INFO [page-000]            ImageUtil.java:124  | Converting max RGB to gray
+2026-01-28 11:52:32,356 INFO [page-000]       StepMonitoring.java:98   | BINARY
+2026-01-28 11:52:32,520 INFO [page-000]       StepMonitoring.java:98   | SCALE
+2026-01-28 11:52:32,530 INFO [page-000]         ScaleBuilder.java:241  | Beam  guessed height: 10 -- 0.50 of 19 interline
+2026-01-28 11:52:32,531 INFO [page-000]         ScaleBuilder.java:264  | Beam measured height: 13 -- 0.54 of [6..19] range at 272% of needed quorum
+2026-01-28 11:52:32,531 INFO [page-000]            ScaleStep.java:65   | Scale{ interline(21,22,24) line(2,3,5) beam(13)}
+2026-01-28 11:52:32,531 INFO [page-000]       StepMonitoring.java:98   | GRID
+2026-01-28 11:52:32,826 INFO [page-000]       LinesRetriever.java:1500 | Global slope: 0.00388
+2026-01-28 11:52:32,849 INFO [page-000]    ClustersRetriever.java:326  | Retrieved raw line clusters: 8 of sizes [5] with interline(21,22,24)
+2026-01-28 11:52:32,917 INFO [page-000]            PeakGraph.java:310  | Systems: #1[1] #2[2] #3[3] #4[4] #5[5] #6[6] #7[7] #8[8]
+2026-01-28 11:52:33,247 INFO [page-000]        SystemManager.java:779  | 1 part along 8 systems
+2026-01-28 11:52:33,248 INFO [page-000]                 Book.java:543  | Created scores: [{Score 1}]
+2026-01-28 11:52:33,248 INFO [page-000]       StepMonitoring.java:98   | HEADERS
+2026-01-28 11:52:33,351 INFO [page-000]      BasicClassifier.java:286  | Classifier loaded XML norms.
+2026-01-28 11:52:33,351 INFO [page-000]   AbstractClassifier.java:396  | Classifier data loaded from default uri jar:file:/Applications/Audiveris.app/Contents/app/audiveris.jar!/res/basic-classifier.zip
+2026-01-28 11:52:33,600 INFO [page-000]           KeyBuilder.java:1038 | Staff#5 key slice#3 pitch adjusted from -5.6 to -5
+2026-01-28 11:52:33,623 INFO [page-000]       StepMonitoring.java:98   | STEM_SEEDS
+2026-01-28 11:52:33,647 INFO [page-000]        StemSeedsStep.java:86   | stem(3 max:5)
+2026-01-28 11:52:33,675 INFO [page-000]       StepMonitoring.java:98   | BEAMS
+2026-01-28 11:52:35,925 INFO [page-000]       StepMonitoring.java:98   | LEDGERS
+2026-01-28 11:52:36,042 INFO [page-000]       StepMonitoring.java:98   | HEADS
+2026-01-28 11:52:38,419 INFO [page-000]        HeadSeedTally.java:235  | Scale information: HeadSeeds{NOTEHEAD_BLACK[L:-0.5,R:0.5]}
+2026-01-28 11:52:38,419 INFO [page-000]       StepMonitoring.java:98   | STEMS
+2026-01-28 11:52:38,670 INFO [page-000]       StepMonitoring.java:98   | REDUCTION
+2026-01-28 11:52:38,708 INFO [page-000]        ReductionStep.java:105  | Stems free length median value: 61 pixels, 2.8 interlines
+2026-01-28 11:52:38,710 INFO [page-000]       StepMonitoring.java:98   | CUE_BEAMS
+2026-01-28 11:52:38,711 INFO [page-000]         CueBeamsStep.java:81   | Step CUE_BEAMS is skipped because small heads switch is off
+2026-01-28 11:52:38,711 INFO [page-000]       StepMonitoring.java:98   | TEXTS
+2026-01-28 11:52:38,773 WARN [page-000]         TesseractOCR.java:335  | The collection of supported languages is empty
+2026-01-28 11:52:38,773 INFO [page-000]              OcrUtil.java:106  | Missing support for 'eng' language(s)
+2026-01-28 11:52:38,779 INFO [page-000]       StepMonitoring.java:98   | MEASURES
+2026-01-28 11:52:38,782 INFO [page-000]                 Page.java:307  | 29 raw measures: [3 in system#1, 4 in system#2, 4 in system#3, 4 in system#4, 4 in system#5, 3 in system#6, 4 in system#7, 3 in system#8]
+2026-01-28 11:52:38,782 INFO [page-000]       StepMonitoring.java:98   | CHORDS
+2026-01-28 11:52:38,788 INFO [page-000]       StepMonitoring.java:98   | CURVES
+2026-01-28 11:52:39,489 INFO [page-000]         SlursBuilder.java:240  | Slurs: 64
+2026-01-28 11:52:39,495 INFO [page-000]      SegmentsBuilder.java:155  | Segments: 24
+2026-01-28 11:52:39,498 INFO [page-000]       StepMonitoring.java:98   | SYMBOLS
+2026-01-28 11:52:39,834 INFO [page-000]       StepMonitoring.java:98   | LINKS
+2026-01-28 11:52:39,847 INFO [page-000]             KeyInter.java:1298 | Key built KeyInter#6543{(0.952) staff:4 KEY_SHARP_2 pitch:-2.7 fifths:2}
+2026-01-28 11:52:39,852 INFO [page-000]             KeyInter.java:1298 | Key built KeyInter#6546{(0.945) staff:6 KEY_SHARP_2 pitch:-2.8 fifths:2}
+2026-01-28 11:52:39,863 INFO [page-000]       StepMonitoring.java:98   | RHYTHMS
+2026-01-28 11:52:39,879 INFO [page-000]                Voice.java:257  | Measure{#17} Voice{#3 excess:1/12} too long
+2026-01-28 11:52:39,879 INFO [page-000]                Voice.java:257  | Measure{#17} Voice{#4 excess:1/12} too long
+2026-01-28 11:52:39,879 INFO [page-000]          StackRhythm.java:224  | S5 MeasureStack#17 no correct rhythm
+2026-01-28 11:52:39,884 INFO [page-000]                Voice.java:257  | Measure{#28} Voice{#1 excess:1/8} too long
+2026-01-28 11:52:39,884 INFO [page-000]          StackRhythm.java:224  | S8 MeasureStack#28 no correct rhythm
+2026-01-28 11:52:39,884 INFO [page-000]       StepMonitoring.java:98   | PAGE
+2026-01-28 11:52:39,885 INFO [page-000]       SheetReduction.java:154  | Gutter. Different glyphs 5/6 ArticulationInter#6433{(0.786/0.899) TENUTO} vs SlurInter#5227{(0.700/0.952) SLUR_ABOVE}
+2026-01-28 11:52:39,887 WARN [page-000]         MeasureFixer.java:343  | System#1 No target duration for measures local IDs [1, 2, 3], please check time signatures
+2026-01-28 11:52:39,887 WARN [page-000]         MeasureFixer.java:343  | System#2 No target duration for measures local IDs [4, 5, 6, 7], please check time signatures
+2026-01-28 11:52:39,887 WARN [page-000]         MeasureFixer.java:343  | System#3 No target duration for measures local IDs [8, 9, 10, 11], please check time signatures
+2026-01-28 11:52:39,887 WARN [page-000]         MeasureFixer.java:343  | System#4 No target duration for measures local IDs [12, 13], please check time signatures
+2026-01-28 11:52:39,887 INFO [page-000]                Voice.java:257  | Measure{#17} Voice{#3 excess:1/12} too long
+2026-01-28 11:52:39,887 INFO [page-000]                Voice.java:257  | Measure{#17} Voice{#4 excess:1/12} too long
+2026-01-28 11:52:39,888 INFO [page-000]                Voice.java:257  | Measure{#28} Voice{#1 excess:1/8} too long
+2026-01-28 11:52:39,888 INFO [page-000]                 Book.java:2596 | Book{page-000} storing
+2026-01-28 11:52:39,917 INFO [page-000]                 Book.java:2577 | Stored /book.xml
+2026-01-28 11:52:39,989 INFO [page-000]           DataHolder.java:348  | Stored /sheet#1/BINARY.png
+2026-01-28 11:52:40,359 INFO [page-000]                Sheet.java:1583 | Stored /sheet#1/sheet#1.xml
+2026-01-28 11:52:40,360 INFO [page-000]                 Book.java:2537 | Book stored as scores/page-000.omr
+2026-01-28 11:52:40,360 INFO [page-000]            SheetStub.java:1660 | Disposed sheet
+2026-01-28 11:52:40,375 INFO [page-000]                 Book.java:2064 | End of Stub#1
+2026-01-28 11:52:40,375 INFO [page-000]                 Book.java:2071 | Book processed.
+2026-01-28 11:52:40,573 INFO [page-000]            SheetStub.java:997  | Loaded /sheet#1/sheet#1.xml
+2026-01-28 11:52:40,675 INFO [page-000]      PartwiseBuilder.java:2688 | Exporting sheet(s): [#1]
+2026-01-28 11:52:40,703 INFO [page-000]        ScoreExporter.java:164  | Score page-000 exported to scores/page-000.mxl
+2026-01-28 11:52:40,725 INFO [page-000]                Score.java:181  | Closing {Score 1}
