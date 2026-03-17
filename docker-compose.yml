@@ -1,0 +1,11 @@
+services:
+  music-optics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: music-optics:latest
+    ports:
+      - "8501:8501"
+    environment:
+      AUDIVERIS_BIN: /usr/bin/Audiveris
+    restart: unless-stopped

@@ -8,4 +8,6 @@ dependencies = [
     "jupyter>=1.1.1",
     "numpy>=2.4.1",
     "opencv-python-headless>=4.13.0.90",
+    "pymupdf>=1.26.4",
+    "streamlit>=1.49.1",
 ]
