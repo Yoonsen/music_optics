@@ -7,7 +7,9 @@ import zipfile
 import base64
 import urllib.request
 import urllib.parse
+import urllib.error
 import re
+import time
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -24,6 +26,11 @@ except ImportError:
 
 DEFAULT_AUDIVERIS = "/Applications/Audiveris.app/Contents/MacOS/Audiveris"
 PREVIEW_HEIGHT = 640
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; music_optics_omr_demo/1.0)",
+    "Accept": "application/json,image/*,*/*;q=0.8",
+    "Accept-Language": "nb-NO,nb;q=0.9,en;q=0.7",
+}
 
 
 def audiveris_exists(audiveris_bin: str) -> bool:
@@ -103,9 +110,28 @@ def extract_nb_requested_page(user_input: str) -> int | None:
 
 
 def fetch_json(url: str) -> dict:
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        content = resp.read()
-    return json.loads(content.decode("utf-8"))
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            req = urllib.request.Request(url=url, headers=HTTP_HEADERS)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                content = resp.read()
+            return json.loads(content.decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            last_exc = exc
+            if exc.code == 403 and attempt == 0:
+                time.sleep(0.4)
+                continue
+            raise
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            if attempt == 0:
+                time.sleep(0.4)
+                continue
+            raise
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("Ukjent feil ved henting av JSON.")
 
 
 def extract_canvas_pages(manifest: dict) -> list[dict]:
@@ -150,8 +176,27 @@ def extract_canvas_pages(manifest: dict) -> list[dict]:
 
 
 def download_to_path(url: str, path: Path) -> None:
-    with urllib.request.urlopen(url, timeout=60) as resp:
-        path.write_bytes(resp.read())
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            req = urllib.request.Request(url=url, headers=HTTP_HEADERS)
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                path.write_bytes(resp.read())
+            return
+        except urllib.error.HTTPError as exc:
+            last_exc = exc
+            if exc.code == 403 and attempt == 0:
+                time.sleep(0.4)
+                continue
+            raise
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            if attempt == 0:
+                time.sleep(0.4)
+                continue
+            raise
+    if last_exc:
+        raise last_exc
 
 
 def get_pdf_page_count(pdf_path: Path) -> int:
