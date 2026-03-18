@@ -70,6 +70,13 @@ Kjor:
 docker compose up --build
 ```
 
+Hvis build stopper i Audiveris-steget, prover:
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
 Appen blir tilgjengelig pa:
 
 - `http://localhost:8501` (lokalt)

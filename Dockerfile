@@ -13,6 +13,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    dpkg \
     python3 \
     python3-pip \
     python3-venv \
@@ -22,6 +23,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-nor \
     tesseract-ocr-deu \
     tesseract-ocr-dan \
+    xdg-utils \
+    shared-mime-info \
+    desktop-file-utils \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
+    libxi6 \
+    libxrandr2 \
+    libfreetype6 \
+    fontconfig \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
@@ -29,9 +40,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fL "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}-ubuntu${AUDIVERIS_UBUNTU_RELEASE}-x86_64.deb" \
     -o /tmp/audiveris.deb \
     && apt-get update \
-    && apt-get install -y /tmp/audiveris.deb \
+    && (apt-get install -y /tmp/audiveris.deb || (echo "apt install of Audiveris failed; extracting .deb payload instead" && dpkg-deb -x /tmp/audiveris.deb /)) \
     && rm -f /tmp/audiveris.deb \
     && rm -rf /var/lib/apt/lists/*
+
+RUN test -x /usr/bin/Audiveris
 
 COPY app.py README.md pyproject.toml ./
 
