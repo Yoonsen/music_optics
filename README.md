@@ -86,3 +86,7 @@ Merk:
 
 - Docker-oppsettet bruker Audiveris Linux `.deb` for Ubuntu 24.04 x86_64.
 - Hvis LAN-maskinen er ARM, ma vi lage en egen ARM-strategi.
+
+## Samarbeid
+
+Se `CONTRIBUTING.md` for branch-strategi, commit-konvensjon og PR-flyt.
