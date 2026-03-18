@@ -36,6 +36,7 @@ En forste ende-til-ende test er gjennomfort:
 Appen i `app.py` gir en enkel flyt:
 
 - Last opp `png/jpg/jpeg/pdf`
+- Eller bruk NB IIIF-kilde (URN/sesamid/manifest-URL)
 - Konvertering med Audiveris
 - Last ned generert `mxl`
 
