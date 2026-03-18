@@ -175,6 +175,20 @@ def extract_canvas_pages(manifest: dict) -> list[dict]:
     return pages
 
 
+def extract_pdf_rendering_url(manifest: dict) -> str | None:
+    rendering = manifest.get("rendering", [])
+    if not isinstance(rendering, list):
+        return None
+    for item in rendering:
+        if not isinstance(item, dict):
+            continue
+        url = item.get("id")
+        fmt = str(item.get("format", "")).lower()
+        if url and ("pdf" in fmt or str(url).lower().endswith(".pdf")):
+            return str(url)
+    return None
+
+
 def download_to_path(url: str, path: Path) -> None:
     last_exc: Exception | None = None
     for attempt in range(2):
@@ -506,11 +520,13 @@ def main() -> None:
             ).strip()
 
         pages: list[dict] = []
+        manifest_pdf_url: str | None = None
         if manifest_input:
             try:
                 manifest_url = resolve_nb_manifest_url(manifest_input)
                 manifest = fetch_json(manifest_url)
                 pages = extract_canvas_pages(manifest)
+                manifest_pdf_url = extract_pdf_rendering_url(manifest)
                 label = manifest.get("label", {})
                 title = ""
                 if isinstance(label, dict):
@@ -521,6 +537,8 @@ def main() -> None:
                 if title:
                     st.caption(f"Manifest: {title}")
                 st.caption(f"Manifest-URL: {manifest_url}")
+                if manifest_pdf_url:
+                    st.caption("PDF-fallback tilgjengelig via manifestet.")
             except Exception as exc:  # noqa: BLE001
                 st.error(f"Klarte ikke hente/lese manifest: {exc}")
 
@@ -593,8 +611,23 @@ def main() -> None:
                         return
                     downloaded_img = in_dir / f"nb_page_{selected_canvas_page['index']}.jpg"
                     work_img = in_dir / f"nb_page_{selected_canvas_page['index']}.png"
-                    download_to_path(selected_canvas_page["image_url"], downloaded_img)
-                    normalize_uploaded_image_to_png(downloaded_img, work_img)
+                    try:
+                        download_to_path(selected_canvas_page["image_url"], downloaded_img)
+                        normalize_uploaded_image_to_png(downloaded_img, work_img)
+                    except urllib.error.HTTPError as img_exc:
+                        # Some environments can fetch IIIF manifest but get 403 on image resolver.
+                        # Fall back to PDF rendering URL from the same manifest when available.
+                        if img_exc.code == 403 and manifest_pdf_url:
+                            st.info("Bildeuthenting ga 403. Prøver PDF-fallback fra manifest ...")
+                            pdf_path = in_dir / "manifest_source.pdf"
+                            download_to_path(manifest_pdf_url, pdf_path)
+                            render_pdf_page_to_png(
+                                pdf_path,
+                                work_img,
+                                selected_canvas_page["index"],
+                            )
+                        else:
+                            raise
                 except Exception as exc:  # noqa: BLE001
                     st.error(f"Klarte ikke laste ned valgt side: {exc}")
                     return
