@@ -29,6 +29,24 @@ def audiveris_exists(audiveris_bin: str) -> bool:
     return shutil.which(audiveris_bin) is not None
 
 
+def detect_tessdata_prefix() -> str | None:
+    env_value = os.getenv("TESSDATA_PREFIX", "").strip()
+    if env_value and Path(env_value).exists():
+        return env_value
+
+    candidates = [
+        str(Path.home() / "tessdata-legacy"),  # Local fallback with legacy-compatible models
+        "/opt/homebrew/share/tessdata",  # macOS Homebrew (Apple Silicon)
+        "/usr/local/share/tessdata",     # macOS Homebrew (Intel) / custom
+        "/usr/share/tesseract-ocr/5/tessdata",  # Ubuntu/Debian
+        "/usr/share/tessdata",  # Some Linux distros
+    ]
+    for path in candidates:
+        if Path(path).exists():
+            return path
+    return None
+
+
 def get_pdf_page_count(pdf_path: Path) -> int:
     if fitz is None:
         raise RuntimeError(
@@ -61,30 +79,72 @@ def render_pdf_page_to_png(pdf_path: Path, png_path: Path, page_number: int) -> 
         doc.close()
 
 
-def run_audiveris(audiveris_bin: str, input_image: Path, out_dir: Path) -> subprocess.CompletedProcess:
-    cmd = [
-        audiveris_bin,
-        "-batch",
-        "-export",
-        "-output",
-        str(out_dir),
-        str(input_image),
-    ]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
-
-
-def run_audiveris_export_from_omr(
-    audiveris_bin: str, input_omr: Path, out_dir: Path
+def run_audiveris(
+    audiveris_bin: str,
+    input_image: Path,
+    out_dir: Path,
+    ocr_language_spec: str | None = None,
+    tessdata_prefix: str | None = None,
 ) -> subprocess.CompletedProcess:
     cmd = [
         audiveris_bin,
         "-batch",
+    ]
+    if ocr_language_spec:
+        cmd.extend(
+            [
+                "-constant",
+                f"org.audiveris.omr.text.Language.defaultSpecification={ocr_language_spec}",
+            ]
+        )
+    cmd.extend(
+        [
+        "-export",
+        "-output",
+        str(out_dir),
+        str(input_image),
+        ]
+    )
+    run_env = os.environ.copy()
+    if tessdata_prefix:
+        run_env["TESSDATA_PREFIX"] = tessdata_prefix
+    return subprocess.run(
+        cmd, capture_output=True, text=True, timeout=300, check=False, env=run_env
+    )
+
+
+def run_audiveris_export_from_omr(
+    audiveris_bin: str,
+    input_omr: Path,
+    out_dir: Path,
+    ocr_language_spec: str | None = None,
+    tessdata_prefix: str | None = None,
+) -> subprocess.CompletedProcess:
+    cmd = [
+        audiveris_bin,
+        "-batch",
+    ]
+    if ocr_language_spec:
+        cmd.extend(
+            [
+                "-constant",
+                f"org.audiveris.omr.text.Language.defaultSpecification={ocr_language_spec}",
+            ]
+        )
+    cmd.extend(
+        [
         "-export",
         "-output",
         str(out_dir),
         str(input_omr),
-    ]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
+        ]
+    )
+    run_env = os.environ.copy()
+    if tessdata_prefix:
+        run_env["TESSDATA_PREFIX"] = tessdata_prefix
+    return subprocess.run(
+        cmd, capture_output=True, text=True, timeout=300, check=False, env=run_env
+    )
 
 
 def find_output_score(out_dir: Path) -> Path | None:
@@ -227,6 +287,16 @@ def main() -> None:
 
     env_audiveris = os.getenv("AUDIVERIS_BIN", DEFAULT_AUDIVERIS)
     audiveris_bin = st.text_input("Audiveris binary", value=env_audiveris)
+    ocr_language_spec = st.text_input(
+        "OCR-språk (Tesseract, pluss-separert)",
+        value="nor+eng",
+        help="Eksempel: nor+eng eller nor+dan+eng",
+    ).strip()
+    tessdata_prefix = detect_tessdata_prefix()
+    if tessdata_prefix:
+        st.caption(f"TESSDATA_PREFIX brukt: {tessdata_prefix}")
+    else:
+        st.caption("Fant ikke tessdata automatisk. Sett ev. miljøvariabelen TESSDATA_PREFIX.")
 
     selected_pdf_page = 1
     control_col_1, control_col_2, control_col_3 = st.columns([2, 1, 1])
@@ -299,7 +369,13 @@ def main() -> None:
             with st.spinner("Kjorer Audiveris..."):
                 started = datetime.now()
                 try:
-                    result = run_audiveris(audiveris_bin, work_img, out_dir)
+                    result = run_audiveris(
+                        audiveris_bin,
+                        work_img,
+                        out_dir,
+                        ocr_language_spec or None,
+                        tessdata_prefix,
+                    )
                 except subprocess.TimeoutExpired:
                     st.error("Audiveris timet ut etter 300 sekunder.")
                     return
@@ -313,7 +389,13 @@ def main() -> None:
                 try:
                     upscale_image(work_img, retry_img, scale=3.0)
                     with st.spinner("Lav opplosning oppdaget. Prover pa nytt med oppskalert bilde (x3)..."):
-                        retry_result = run_audiveris(audiveris_bin, retry_img, out_dir)
+                        retry_result = run_audiveris(
+                            audiveris_bin,
+                            retry_img,
+                            out_dir,
+                            ocr_language_spec or None,
+                            tessdata_prefix,
+                        )
                     if retry_result.returncode == 0:
                         st.info("Ekstra forsok med oppskalert bilde er gjennomfort.")
                         result = retry_result
@@ -341,7 +423,11 @@ def main() -> None:
                     st.info("Fant .omr, prover en ekstra eksport fra OMR-filen...")
                     try:
                         fallback_result = run_audiveris_export_from_omr(
-                            audiveris_bin, omr_file, out_dir
+                            audiveris_bin,
+                            omr_file,
+                            out_dir,
+                            ocr_language_spec or None,
+                            tessdata_prefix,
                         )
                     except subprocess.TimeoutExpired:
                         st.warning("Ekstra eksport fra .omr timet ut etter 300 sekunder.")
