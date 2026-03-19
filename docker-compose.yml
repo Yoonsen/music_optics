@@ -7,5 +7,5 @@ services:
     ports:
       - "8501:8501"
     environment:
-      AUDIVERIS_BIN: /usr/bin/Audiveris
+      AUDIVERIS_BIN: /usr/local/bin/Audiveris
     restart: unless-stopped

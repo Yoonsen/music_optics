@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    AUDIVERIS_BIN=/usr/bin/Audiveris
+    AUDIVERIS_BIN=/usr/local/bin/Audiveris
 
 ARG AUDIVERIS_VERSION=5.9.0
 ARG AUDIVERIS_UBUNTU_RELEASE=24.04
@@ -39,12 +39,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN curl -fL "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}-ubuntu${AUDIVERIS_UBUNTU_RELEASE}-x86_64.deb" \
     -o /tmp/audiveris.deb \
-    && apt-get update \
-    && (apt-get install -y /tmp/audiveris.deb || (echo "apt install of Audiveris failed; extracting .deb payload instead" && dpkg-deb -x /tmp/audiveris.deb /)) \
+    && dpkg-deb -x /tmp/audiveris.deb / \
     && rm -f /tmp/audiveris.deb \
     && rm -rf /var/lib/apt/lists/*
 
-RUN test -x /usr/bin/Audiveris
+RUN if [ -x /opt/audiveris/bin/Audiveris ]; then \
+      ln -sf /opt/audiveris/bin/Audiveris /usr/local/bin/Audiveris; \
+    elif [ -x /usr/bin/Audiveris ]; then \
+      ln -sf /usr/bin/Audiveris /usr/local/bin/Audiveris; \
+    else \
+      echo "Audiveris binary not found after package extraction"; \
+      exit 1; \
+    fi \
+    && test -x /usr/local/bin/Audiveris
 
 COPY app.py README.md pyproject.toml ./
 
