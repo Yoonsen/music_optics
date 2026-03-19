@@ -3,7 +3,8 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    AUDIVERIS_BIN=/usr/local/bin/Audiveris
+    AUDIVERIS_BIN=/usr/local/bin/Audiveris \
+    TESSDATA_PREFIX=/opt/tessdata-legacy
 
 ARG AUDIVERIS_VERSION=5.9.0
 ARG AUDIVERIS_UBUNTU_RELEASE=24.04
@@ -37,6 +38,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /opt/tessdata-legacy \
+    && curl -fL "https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata" -o /opt/tessdata-legacy/eng.traineddata \
+    && curl -fL "https://github.com/tesseract-ocr/tessdata/raw/main/nor.traineddata" -o /opt/tessdata-legacy/nor.traineddata \
+    && curl -fL "https://github.com/tesseract-ocr/tessdata/raw/main/dan.traineddata" -o /opt/tessdata-legacy/dan.traineddata \
+    && curl -fL "https://github.com/tesseract-ocr/tessdata/raw/main/deu.traineddata" -o /opt/tessdata-legacy/deu.traineddata \
+    && curl -fL "https://github.com/tesseract-ocr/tessdata/raw/main/osd.traineddata" -o /opt/tessdata-legacy/osd.traineddata
+
 RUN curl -fL "https://github.com/Audiveris/audiveris/releases/download/${AUDIVERIS_VERSION}/Audiveris-${AUDIVERIS_VERSION}-ubuntu${AUDIVERIS_UBUNTU_RELEASE}-x86_64.deb" \
     -o /tmp/audiveris.deb \
     && dpkg-deb -x /tmp/audiveris.deb / \
@@ -52,6 +60,8 @@ RUN if [ -x /opt/audiveris/bin/Audiveris ]; then \
       exit 1; \
     fi \
     && test -x /usr/local/bin/Audiveris
+
+RUN tesseract --list-langs | grep -E "eng|nor|dan|deu|osd"
 
 COPY app.py README.md pyproject.toml ./
 

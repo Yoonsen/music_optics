@@ -46,6 +46,7 @@ def detect_tessdata_prefix() -> str | None:
 
     candidates = [
         str(Path.home() / "tessdata-legacy"),  # Local fallback with legacy-compatible models
+        "/opt/tessdata-legacy",  # Docker legacy fallback
         "/opt/homebrew/share/tessdata",  # macOS Homebrew (Apple Silicon)
         "/usr/local/share/tessdata",     # macOS Homebrew (Intel) / custom
         "/usr/share/tesseract-ocr/5/tessdata",  # Ubuntu/Debian
