@@ -49,7 +49,7 @@ python3 -m venv .venv
 .venv/bin/python -m streamlit run app.py
 ```
 
-Hvis Audiveris ligger et annet sted enn standardsti pa macOS:
+Appen prover automatisk vanlige Audiveris-stier pa macOS og Linux. Hvis binaren ligger et annet sted, kan du overstyre manuelt:
 
 ```bash
 AUDIVERIS_BIN="/path/til/Audiveris" .venv/bin/python -m streamlit run app.py
@@ -87,6 +87,23 @@ Merk:
 
 - Docker-oppsettet bruker Audiveris Linux `.deb` for Ubuntu 24.04 x86_64.
 - Hvis LAN-maskinen er ARM, ma vi lage en egen ARM-strategi.
+
+## Tidligere deploy (rekonstruert)
+
+Basert pa lokal historikk og tidligere oppsett ser det ut til at appen ble brukt pa to mater:
+
+- Lokalt med `uv run streamlit run app.py`
+- Som pakket Docker-app eksponert fra `sprakbank4`
+
+Det mest sannsynlige tidligere oppsettet var:
+
+1. Appen ble bygget lokalt til et Docker-image som inneholdt Streamlit, Audiveris, Tesseract og Python-avhengigheter.
+2. Imaget ble eksportert til en `.tar`-fil (`music-optics_latest.tar`).
+3. Filen ble kopiert til `sprakbank4.lx.nb.no`.
+4. Appen ble kjort derfra fordi den maskinen hadde bedre tilgang til NB sine bildedata / resolver-endepunkter.
+5. Tjenesten ble deretter eksponert pa en URL via port `8501`.
+
+Dette stemmer ogsa med at appen lokalt kan laste manifest og metadata, mens selve bildeuthentingen i noen miljoer kan gi `403` fra NB-resolveren. Appen har derfor fallback til PDF fra manifestet ved konvertering.
 
 ## Samarbeid
 

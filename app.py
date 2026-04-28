@@ -24,7 +24,14 @@ except ImportError:
     fitz = None
 
 
-DEFAULT_AUDIVERIS = "/Applications/Audiveris.app/Contents/MacOS/Audiveris"
+DEFAULT_AUDIVERIS_CANDIDATES = [
+    "/Applications/Audiveris.app/Contents/MacOS/Audiveris",  # macOS app bundle
+    "/opt/audiveris/bin/Audiveris",  # Linux/manual install
+    "/usr/local/bin/Audiveris",  # Docker/common symlink
+    "/usr/bin/Audiveris",  # System install
+    "Audiveris",  # PATH lookup
+    "audiveris",  # PATH lookup
+]
 PREVIEW_HEIGHT = 640
 HTTP_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; music_optics_omr_demo/1.0)",
@@ -37,6 +44,18 @@ def audiveris_exists(audiveris_bin: str) -> bool:
     if Path(audiveris_bin).exists():
         return True
     return shutil.which(audiveris_bin) is not None
+
+
+def detect_audiveris_bin() -> str:
+    env_value = os.getenv("AUDIVERIS_BIN", "").strip()
+    if env_value:
+        return env_value
+
+    for candidate in DEFAULT_AUDIVERIS_CANDIDATES:
+        if audiveris_exists(candidate):
+            return candidate
+
+    return DEFAULT_AUDIVERIS_CANDIDATES[0]
 
 
 def detect_tessdata_prefix() -> str | None:
@@ -447,17 +466,97 @@ def render_image_preview(image_path: Path, height: int = PREVIEW_HEIGHT) -> None
     components.html(html, height=height + 10, scrolling=False)
 
 
+def render_image_preview_bytes(image_bytes: bytes, height: int = PREVIEW_HEIGHT) -> None:
+    encoded = base64.b64encode(image_bytes).decode("utf-8")
+    html = f"""
+    <div style="height:{height}px; border:1px solid #ddd; border-radius:8px; overflow:auto; display:flex; align-items:flex-start; justify-content:center; background:#fff;">
+      <img src="data:image/png;base64,{encoded}" style="max-width:100%; height:auto; display:block;" />
+    </div>
+    """
+    components.html(html, height=height + 10, scrolling=False)
+
+
+def init_session_state() -> None:
+    if "audiveris_bin" not in st.session_state:
+        st.session_state["audiveris_bin"] = detect_audiveris_bin()
+    if "ocr_language_spec" not in st.session_state:
+        st.session_state["ocr_language_spec"] = "nor+eng"
+    if "source_mode" not in st.session_state:
+        st.session_state["source_mode"] = "Lokal fil"
+    if "conversion_result" not in st.session_state:
+        st.session_state["conversion_result"] = None
+
+
+def render_conversion_result(result_data: dict) -> None:
+    for notice in result_data.get("notices", []):
+        st.info(notice)
+
+    st.success(f"Konvertering fullfort: {result_data['score_name']}")
+    st.caption(f"Ferdig pa {result_data['elapsed_seconds']:.1f} sekunder")
+    st.download_button(
+        label="Last ned resultatfil",
+        data=result_data["score_bytes"],
+        file_name=result_data["score_name"],
+        mime="application/octet-stream",
+        key=f"download-score-{result_data['score_name']}",
+    )
+
+    left_col, right_col = st.columns([1, 1])
+    with left_col:
+        st.subheader("Kilde")
+        render_image_preview_bytes(result_data["work_img_bytes"], height=PREVIEW_HEIGHT)
+        st.caption(
+            f"Arbeidsbilde: {result_data['work_img_name']} ({result_data['source_caption']})"
+        )
+        if result_data.get("source_pdf_bytes") is not None:
+            with st.expander("Vis original PDF (scroll)", expanded=False):
+                render_pdf_preview(result_data["source_pdf_bytes"], height=PREVIEW_HEIGHT)
+
+    with right_col:
+        st.subheader("MXL-visning")
+        if result_data.get("xml_text"):
+            render_musicxml_preview(result_data["xml_text"], height=PREVIEW_HEIGHT)
+        else:
+            st.info("Ingen visning tilgjengelig for denne output-filen.")
+
+    if result_data.get("xml_text"):
+        with st.expander("Vis MusicXML (raw)"):
+            st.download_button(
+                label="Last ned MusicXML (.xml)",
+                data=result_data["xml_text"].encode("utf-8"),
+                file_name=result_data["xml_name"],
+                mime="application/xml",
+                key=f"download-xml-{result_data['xml_name']}",
+            )
+            st.text_area("MusicXML", result_data["xml_text"], height=320)
+
+    if result_data.get("midi_bytes") is not None:
+        st.download_button(
+            label="Last ned MIDI (for avspilling)",
+            data=result_data["midi_bytes"],
+            file_name=result_data["midi_name"],
+            mime="audio/midi",
+            key=f"download-midi-{result_data['midi_name']}",
+        )
+    else:
+        st.caption("MIDI-konvertering er valgfri. Installer `music21` for MID-eksport.")
+
+    with st.expander("Vis kjorelogg"):
+        st.text_area("STDOUT", result_data["stdout"] or "(tom)", height=220)
+        st.text_area("STDERR", result_data["stderr"] or "(tom)", height=160)
+
+
 def main() -> None:
     st.set_page_config(page_title="Music Optics OMR", layout="wide")
+    init_session_state()
     st.title("Music Optics - OMR demo")
     st.write("Last opp en noteside og generer `MusicXML/MXL` lokalt med Audiveris.")
 
-    env_audiveris = os.getenv("AUDIVERIS_BIN", DEFAULT_AUDIVERIS)
-    audiveris_bin = st.text_input("Audiveris binary", value=env_audiveris)
+    audiveris_bin = st.text_input("Audiveris binary", key="audiveris_bin").strip()
     ocr_language_spec = st.text_input(
         "OCR-språk (Tesseract, pluss-separert)",
-        value="nor+eng",
         help="Eksempel: nor+eng eller nor+dan+eng",
+        key="ocr_language_spec",
     ).strip()
     tessdata_prefix = detect_tessdata_prefix()
     if tessdata_prefix:
@@ -469,6 +568,7 @@ def main() -> None:
         "Kilde",
         options=["Lokal fil", "NB IIIF-manifest"],
         horizontal=True,
+        key="source_mode",
     )
 
     selected_pdf_page = 1
@@ -485,6 +585,7 @@ def main() -> None:
                 "Browse file",
                 type=["png", "jpg", "jpeg", "pdf"],
                 accept_multiple_files=False,
+                key="uploaded_file",
             )
 
         if uploaded is not None and uploaded.name.lower().endswith(".pdf"):
@@ -494,10 +595,12 @@ def main() -> None:
                     meta_pdf.write_bytes(uploaded.getvalue())
                     page_count = get_pdf_page_count(meta_pdf)
                 options = list(range(1, page_count + 1))
+                if st.session_state.get("selected_pdf_page") not in options:
+                    st.session_state["selected_pdf_page"] = 1
                 selected_pdf_page = control_col_2.selectbox(
                     "Velg side i PDF for konvertering",
                     options=options,
-                    index=0,
+                    key="selected_pdf_page",
                 )
                 control_col_3.caption(f"PDF: {page_count} sider")
             except Exception as exc:  # noqa: BLE001
@@ -518,6 +621,7 @@ def main() -> None:
             manifest_input = st.text_input(
                 "URN / sesamid / manifest-URL",
                 placeholder="f.eks. URN:NBN:no-nb_digibok_2014012027005",
+                key="manifest_input",
             ).strip()
 
         pages: list[dict] = []
@@ -549,7 +653,13 @@ def main() -> None:
             requested_page = extract_nb_requested_page(manifest_input)
             if requested_page is not None:
                 default_index = max(0, min(len(options) - 1, requested_page - 1))
-            selected_label = control_col_2.selectbox("Velg side", options=options, index=default_index)
+            if st.session_state.get("selected_canvas_label") not in options:
+                st.session_state["selected_canvas_label"] = options[default_index]
+            selected_label = control_col_2.selectbox(
+                "Velg side",
+                options=options,
+                key="selected_canvas_label",
+            )
             selected_idx = options.index(selected_label)
             selected_canvas_page = pages[selected_idx]
             control_col_3.caption(f"Totalt {len(pages)} sider")
@@ -579,6 +689,8 @@ def main() -> None:
             st.warning("Velg en kilde for konvertering.")
             return
 
+        st.session_state["conversion_result"] = None
+        notices: list[str] = []
         with tempfile.TemporaryDirectory(prefix="music_optics_") as tmp:
             tmp_dir = Path(tmp)
             in_dir = tmp_dir / "in"
@@ -619,7 +731,9 @@ def main() -> None:
                         # Some environments can fetch IIIF manifest but get 403 on image resolver.
                         # Fall back to PDF rendering URL from the same manifest when available.
                         if img_exc.code == 403 and manifest_pdf_url:
-                            st.info("Bildeuthenting ga 403. Prøver PDF-fallback fra manifest ...")
+                            notices.append(
+                                "Bildeuthenting ga 403. Brukte PDF-fallback fra manifest."
+                            )
                             pdf_path = in_dir / "manifest_source.pdf"
                             download_to_path(manifest_pdf_url, pdf_path)
                             render_pdf_page_to_png(
@@ -664,7 +778,7 @@ def main() -> None:
                             tessdata_prefix,
                         )
                     if retry_result.returncode == 0:
-                        st.info("Ekstra forsok med oppskalert bilde er gjennomfort.")
+                        notices.append("Ekstra forsok med oppskalert bilde er gjennomfort.")
                         result = retry_result
                 except Exception as exc:  # noqa: BLE001
                     st.warning(f"Klarte ikke retry med oppskalert bilde: {exc}")
@@ -741,14 +855,6 @@ def main() -> None:
                 return
 
             score_bytes = score_file.read_bytes()
-            st.success(f"Konvertering fullfort: {score_file.name}")
-            st.download_button(
-                label="Last ned resultatfil",
-                data=score_bytes,
-                file_name=score_file.name,
-                mime="application/octet-stream",
-            )
-
             xml_text: str | None = None
             try:
                 if score_file.suffix.lower() == ".mxl":
@@ -758,46 +864,32 @@ def main() -> None:
             except Exception as exc:  # noqa: BLE001
                 st.warning(f"Klarte ikke lage visning av score: {exc}")
 
-            left_col, right_col = st.columns([1, 1])
-            with left_col:
-                st.subheader("Kilde")
-                render_image_preview(work_img, height=PREVIEW_HEIGHT)
-                st.caption(f"Arbeidsbilde: {work_img.name} ({source_caption})")
-                if upload_path is not None and upload_path.suffix.lower() == ".pdf" and uploaded is not None:
-                    with st.expander("Vis original PDF (scroll)", expanded=False):
-                        render_pdf_preview(uploaded.getvalue(), height=PREVIEW_HEIGHT)
-
-            with right_col:
-                st.subheader("MXL-visning")
-                if xml_text:
-                    render_musicxml_preview(xml_text, height=PREVIEW_HEIGHT)
-                else:
-                    st.info("Ingen visning tilgjengelig for denne output-filen.")
-
-            if xml_text:
-                with st.expander("Vis MusicXML (raw)"):
-                    st.download_button(
-                        label="Last ned MusicXML (.xml)",
-                        data=xml_text.encode("utf-8"),
-                        file_name=f"{score_file.stem}.xml",
-                        mime="application/xml",
-                    )
-                    st.text_area("MusicXML", xml_text, height=320)
-
             midi_bytes = convert_score_to_midi(score_bytes, score_file.suffix.lower())
-            if midi_bytes is not None:
-                st.download_button(
-                    label="Last ned MIDI (for avspilling)",
-                    data=midi_bytes,
-                    file_name=f"{score_file.stem}.mid",
-                    mime="audio/midi",
-                )
-            else:
-                st.caption("MIDI-konvertering er valgfri. Installer `music21` for MID-eksport.")
+            st.session_state["conversion_result"] = {
+                "elapsed_seconds": elapsed,
+                "midi_bytes": midi_bytes,
+                "midi_name": f"{score_file.stem}.mid",
+                "notices": notices,
+                "score_bytes": score_bytes,
+                "score_name": score_file.name,
+                "source_caption": source_caption,
+                "source_pdf_bytes": (
+                    uploaded.getvalue()
+                    if upload_path is not None
+                    and upload_path.suffix.lower() == ".pdf"
+                    and uploaded is not None
+                    else None
+                ),
+                "stderr": result.stderr,
+                "stdout": result.stdout,
+                "work_img_bytes": work_img.read_bytes(),
+                "work_img_name": work_img.name,
+                "xml_name": f"{score_file.stem}.xml",
+                "xml_text": xml_text,
+            }
 
-            with st.expander("Vis kjorelogg"):
-                st.text_area("STDOUT", result.stdout or "(tom)", height=220)
-                st.text_area("STDERR", result.stderr or "(tom)", height=160)
+    if st.session_state.get("conversion_result") is not None:
+        render_conversion_result(st.session_state["conversion_result"])
 
 
 if __name__ == "__main__":

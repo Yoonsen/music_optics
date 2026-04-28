@@ -1,7 +1,30 @@
 from pathlib import Path
+import os
+import shutil
 import subprocess
 
-AUDIVERIS = "/Applications/Audiveris.app/Contents/MacOS/Audiveris"
+
+def detect_audiveris() -> str:
+    env_value = os.getenv("AUDIVERIS_BIN", "").strip()
+    if env_value:
+        return env_value
+
+    candidates = [
+        "/Applications/Audiveris.app/Contents/MacOS/Audiveris",
+        "/opt/audiveris/bin/Audiveris",
+        "/usr/local/bin/Audiveris",
+        "/usr/bin/Audiveris",
+        "Audiveris",
+        "audiveris",
+    ]
+    for candidate in candidates:
+        if Path(candidate).exists() or shutil.which(candidate):
+            return candidate
+
+    return candidates[0]
+
+
+AUDIVERIS = detect_audiveris()
 
 IN_DIR = Path("pages")
 OUT_DIR = Path("scores")
